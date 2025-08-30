@@ -34,7 +34,7 @@ jobs:
           source: "target/car-rental-2.0.0.jar"
           target: "/home/${{ secrets.EC2_USER }}/app/"
 
-      # Step 5: Restart app on EC2
+      # Step 5: Setup systemd service & restart app
       - name: Restart app on EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -42,8 +42,25 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Stopping existing app..."
-            pkill -f "java -jar" || true
-            echo "Starting new app..."
-            nohup java -jar /home/${{ secrets.EC2_USER }}/app/car-rental-2.0.0.jar > app.log 2>&1 &
+            SERVICE_NAME=car-rental
+            JAR_PATH=/home/${{ secrets.EC2_USER }}/app/car-rental-2.0.0.jar
+            SERVICE_FILE=/etc/systemd/system/$SERVICE_NAME.service
+
+            echo "Creating systemd service..."
+            sudo bash -c "cat > $SERVICE_FILE" <<EOL
+            [Unit]
+            Description=Car Rental Spring Boot App
+            After=network.target
+
+            [Service]
+            User=${{ secrets.EC2_USER }}
+            ExecStart=/usr/bin/java -jar $JAR_PATH
+            SuccessExitStatus=143
+            Restart=always
+            RestartSec=10
+            StandardOutput=append:/home/${{ secrets.EC2_USER }}/app/app.log
+            StandardError=append:/home/${{ secrets.EC2_USER }}/app/app-error.log
+
+            [Install]
+            WantedBy=multi-us
 
