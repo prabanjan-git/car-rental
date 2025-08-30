@@ -22,9 +22,10 @@
         </tr>
         <tr th:each="car : ${cars}">
             <td th:text="${car.name}"></td>
-            <td th:text="${car.type}"></td>
+            <td th:text="${car.model}"></td>
             <td th:text="${car.pricePerDay}"></td>
         </tr>
     </table>
 </body>
 </html>
+
